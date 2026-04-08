@@ -48,3 +48,12 @@ def test_remover_gasto():
 def test_remover_indice_invalido():
     with pytest.raises(IndexError):
         remover_gasto(99)
+
+def test_buscar_cotacao_dolar():
+    from gastocerto import buscar_cotacao_dolar
+    cotacao = buscar_cotacao_dolar()
+    if cotacao is not None:
+        assert isinstance(cotacao, float)
+        assert cotacao > 0
+    else:
+        assert cotacao is None

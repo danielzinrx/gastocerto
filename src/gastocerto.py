@@ -1,5 +1,6 @@
 import json
 import os
+import urllib.request
 
 ARQUIVO = "gastos.json"
 
@@ -45,10 +46,23 @@ def remover_gasto(indice):
     salvar_gastos(gastos)
     return removido
 
+def buscar_cotacao_dolar():
+    try:
+        url = "https://economia.awesomeapi.com.br/json/last/USD-BRL"
+        with urllib.request.urlopen(url, timeout=5) as response:
+            dados = json.loads(response.read().decode())
+            cotacao = float(dados["USDBRL"]["bid"])
+            return cotacao
+    except Exception:
+        return None
+
 
 def menu():
     while True:
         print("\n===== GastoCerto =====")
+        cotacao = buscar_cotacao_dolar()
+        if cotacao:
+            print(f"💵 Dólar hoje: R$ {cotacao:.2f}")
         print("1. Adicionar gasto")
         print("2. Listar gastos")
         print("3. Ver total")
