@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GastoCerto 💰</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 20px; }
+    h1 { text-align: center; font-size: 2rem; margin-bottom: 5px; color: #38bdf8; }
+    .subtitle { text-align: center; color: #94a3b8; margin-bottom: 20px; }
+    .cotacao { text-align: center; background: #1e293b; padding: 10px; border-radius: 10px; margin-bottom: 20px; color: #4ade80; font-size: 1.1rem; }
+    .card { background: #1e293b; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+    .card h2 { margin-bottom: 15px; color: #38bdf8; font-size: 1.1rem; }
+    input, select { width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #e2e8f0; font-size: 1rem; }
+    button { width: 100%; padding: 10px; border-radius: 8px; border: none; background: #38bdf8; color: #0f172a; font-weight: bold; font-size: 1rem; cursor: pointer; }
+    button:hover { background: #7dd3fc; }
+    .gasto-item { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 10px 15px; border-radius: 8px; margin-bottom: 8px; }
+    .gasto-info { display: flex; flex-direction: column; }
+    .gasto-desc { font-weight: bold; }
+    .gasto-cat { font-size: 0.8rem; color: #94a3b8; }
+    .gasto-valor { color: #f87171; font-weight: bold; }
+    .btn-remover { background: #ef4444; color: white; border: none; border-radius: 6px; padding: 5px 10px; cursor: pointer; font-size: 0.8rem; width: auto; }
+    .total { text-align: center; font-size: 1.3rem; color: #4ade80; font-weight: bold; margin-top: 10px; }
+    .vazio { text-align: center; color: #94a3b8; padding: 20px; }
+  </style>
+</head>
+<body>
+  <h1>💰 GastoCerto</h1>
+  <p class="subtitle">Controle seus gastos pessoais</p>
+
+  <div class="cotacao" id="cotacao">💵 Buscando cotação do dólar...</div>
+
+  <div class="card">
+    <h2>➕ Adicionar Gasto</h2>
+    <input type="text" id="descricao" placeholder="Descrição (ex: Mercado)" />
+    <input type="number" id="valor" placeholder="Valor (ex: 150.00)" step="0.01" min="0.01" />
+    <select id="categoria">
+      <option value="">Selecione a categoria</option>
+      <option value="alimentação">🍔 Alimentação</option>
+      <option value="transporte">🚌 Transporte</option>
+      <option value="lazer">🎮 Lazer</option>
+      <option value="saúde">💊 Saúde</option>
+      <option value="educação">📚 Educação</option>
+      <option value="outros">📦 Outros</option>
+    </select>
+    <button onclick="adicionarGasto()">Adicionar Gasto</button>
+  </div>
+
+  <div class="card">
+    <h2>📋 Meus Gastos</h2>
+    <div id="lista-gastos"><p class="vazio">Nenhum gasto registrado.</p></div>
+    <div class="total" id="total"></div>
+  </div>
+
+  <script>
+    let gastos = JSON.parse(localStorage.getItem('gastocerto') || '[]');
+
+    async function buscarCotacao() {
+      try {
+        const res = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL');
+        const dados = await res.json();
+        const cotacao = parseFloat(dados.USDBRL.bid).toFixed(2);
+        document.getElementById('cotacao').textContent = `💵 Dólar hoje: R$ ${cotacao}`;
+      } catch {
+        document.getElementById('cotacao').textContent = '💵 Cotação indisponível no momento';
+      }
+    }
+
+    function salvar() {
+      localStorage.setItem('gastocerto', JSON.stringify(gastos));
+    }
+
+    function adicionarGasto() {
+      const descricao = document.getElementById('descricao').value.trim();
+      const valor = parseFloat(document.getElementById('valor').value);
+      const categoria = document.getElementById('categoria').value;
+      if (!descricao) return alert('Informe a descrição!');
+      if (!valor || valor <= 0) return alert('Informe um valor válido!');
+      if (!categoria) return alert('Selecione uma categoria!');
+      gastos.push({ descricao, valor, categoria });
+      salvar();
+      document.getElementById('descricao').value = '';
+      document.getElementById('valor').value = '';
+      document.getElementById('categoria').value = '';
+      renderizar();
+    }
+
+    function removerGasto(i) {
+      gastos.splice(i, 1);
+      salvar();
+      renderizar();
+    }
+
+    function renderizar() {
+      const lista = document.getElementById('lista-gastos');
+      const total = document.getElementById('total');
+      if (gastos.length === 0) {
+        lista.innerHTML = '<p class="vazio">Nenhum gasto registrado.</p>';
+        total.textContent = '';
+        return;
+      }
+      lista.innerHTML = gastos.map((g, i) => `
+        <div class="gasto-item">
+          <div class="gasto-info">
+            <span class="gasto-desc">${g.descricao}</span>
+            <span class="gasto-cat">${g.categoria}</span>
+          </div>
+          <span class="gasto-valor">R$ ${g.valor.toFixed(2)}</span>
+          <button class="btn-remover" onclick="removerGasto(${i})">Remover</button>
+        </div>
+      `).join('');
+      const soma = gastos.reduce((acc, g) => acc + g.valor, 0);
+      total.textContent = `Total: R$ ${soma.toFixed(2)}`;
+    }
+
+    buscarCotacao();
+    renderizar();
+  </script>
+</body>
+</html>
